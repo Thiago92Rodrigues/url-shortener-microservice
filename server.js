@@ -5,6 +5,9 @@ var mongo = require('mongodb');
 var mongoose = require('mongoose');
 
 var cors = require('cors');
+var dns = require('dns');
+
+var URLmapping = Map();
 
 var app = express();
 
@@ -29,6 +32,36 @@ app.get('/', function(req, res){
 // your first API endpoint... 
 app.get("/api/hello", function (req, res) {
   res.json({greeting: 'hello API'});
+});
+
+// url shortener endpoint
+app.post("/api/shorturl/new", (req, res) => {
+  var { url } = req.body;
+  try {
+    // check if the provided url is valid
+    dns.lookup(url, (error) => {
+      if (error) throw error;
+
+      var n = Math.random();
+      URLmapping.set(n, url);
+  
+      res.json({ "original_url" : url, "short_url" : n });
+    });
+  } catch (error) {
+    res.json({ "error" : "invalid URL" });
+  }
+});
+
+// access shorted url
+app.get("/api/shorturl/:n", (req, res) => {
+  var { n } = req.params;
+  var url = URLmapping.get(n);
+
+  // Redirect
+  res.writeHead(302, {
+    'Location' : url
+  });
+  res.end();
 });
 
 
